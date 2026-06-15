@@ -1,0 +1,61 @@
+services:
+  reverse-proxy:
+    image: nginx:stable
+    container_name: reverse-proxy
+    ports:
+      - "80:80"
+    volumes:
+      - ./reverse-proxy/nginx.conf:/etc/nginx/nginx.conf:ro
+    depends_on:
+      - portal
+      - lab-jsp
+      - lab-php
+      - lab-aspnet
+
+  portal:
+    build: ./portal
+    container_name: portal
+    expose:
+      - "3000"
+
+  lab-jsp:
+    build: ./lab-jsp
+    container_name: lab-jsp
+    expose:
+      - "8080"
+
+  lab-php:
+    build: ./lab-php
+    container_name: lab-php
+    expose:
+      - "80"
+    depends_on:
+      - lab-php-db
+    environment:
+      DB_HOST: lab-php-db
+      DB_NAME: php_lab
+      DB_USER: php_lab_user
+      DB_PASSWORD: php_lab_pass
+
+  lab-aspnet:
+    build: ./lab-aspnet
+    container_name: lab-aspnet
+    expose:
+      - "8080"
+  
+  lab-php-db:
+    image: mysql:8.0
+    container_name: lab-php-db
+    environment:
+      MYSQL_ROOT_PASSWORD: rootpass
+      MYSQL_DATABASE: php_lab
+      MYSQL_USER: php_lab_user
+      MYSQL_PASSWORD: php_lab_pass
+      LANG: C.UTF-8
+    command:
+      - --character-set-server=utf8mb4
+      - --collation-server=utf8mb4_unicode_ci
+    ports:
+      - "3307:3306"
+    volumes:
+      - ./lab-php/db/init.sql:/docker-entrypoint-initdb.d/init.sql
